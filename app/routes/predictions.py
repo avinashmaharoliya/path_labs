@@ -5,9 +5,9 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from app.config import MODEL_CONFIGS
 from app.services.ct_3d import predict_ct_3d
 from app.services.file_utils import is_image_file, is_nifti_file, save_upload
-from app.services.groq_report import generate_placeholder_3d_report, generate_report_json
+from app.services.groq_report import generate_placeholder_3d_report, generate_report_json, generate_text_report_json
 from app.services.model_registry import model_registry
-from app.services.mri_3d import predict_mri_3d
+from app.services.mri_tumor import predict_mri_tumor_image, predict_mri_tumor_nifti
 from app.services.predictors import predict_image
 
 
@@ -40,12 +40,12 @@ async def handle_mri_endpoint(file: UploadFile):
     upload_path = save_upload(file)
 
     if is_nifti_file(upload_path):
-        prediction = predict_mri_3d(upload_path)
-        return generate_placeholder_3d_report("mri_3d", prediction)
+        prediction = predict_mri_tumor_nifti(upload_path)
+        return generate_text_report_json("mri_tumor", prediction)
 
     ensure_image(upload_path)
-    prediction = predict_2d("mri_2d", upload_path)
-    return generate_report_json("mri_2d", prediction, upload_path)
+    prediction = predict_mri_tumor_image(upload_path)
+    return generate_report_json("mri_tumor", prediction, upload_path)
 
 
 async def handle_ct_endpoint(file: UploadFile):

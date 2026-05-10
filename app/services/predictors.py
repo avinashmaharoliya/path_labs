@@ -21,9 +21,13 @@ IMAGE_TRANSFORM = transforms.Compose([
 
 def load_state_dict(weights_path: Path):
     try:
-        return torch.load(weights_path, map_location=DEVICE, weights_only=True)
+        checkpoint = torch.load(weights_path, map_location=DEVICE, weights_only=True)
     except TypeError:
-        return torch.load(weights_path, map_location=DEVICE)
+        checkpoint = torch.load(weights_path, map_location=DEVICE)
+
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+        return checkpoint["model_state_dict"]
+    return checkpoint
 
 
 def build_timm_model(model_name: str, num_classes: int):
@@ -31,11 +35,11 @@ def build_timm_model(model_name: str, num_classes: int):
     return model
 
 
-def build_resnet18_model(num_classes: int):
+def build_resnet18_model(num_classes: int, dropout: float = 0.3):
     model = models.resnet18(weights=None)
     num_features = model.fc.in_features
     model.fc = nn.Sequential(
-        nn.Dropout(0.3),
+        nn.Dropout(dropout),
         nn.Linear(num_features, num_classes),
     )
     return model
@@ -50,7 +54,7 @@ def build_model(config: dict):
     if config["kind"] == "timm":
         model = build_timm_model(config["model_name"], len(classes))
     elif config["kind"] == "resnet18":
-        model = build_resnet18_model(len(classes))
+        model = build_resnet18_model(len(classes), config.get("dropout", 0.3))
     else:
         raise ValueError(f"Unknown model kind: {config['kind']}")
 

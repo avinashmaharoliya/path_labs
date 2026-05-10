@@ -88,6 +88,27 @@ Use exactly this JSON shape:
 """
 
 
+def build_text_only_prompt(scan_type: str, prediction: dict):
+    return f"""
+Generate a detailed JSON report for this medical imaging model prediction.
+
+The uploaded file is not directly viewable by the report model, so base the report only on
+the classifier output and any slice-level metadata. Do not claim visual findings beyond
+what the classifier output supports.
+
+Scan type:
+{scan_type}
+
+Classifier output:
+{json.dumps(prediction, indent=2)}
+
+Return JSON only. Do not include markdown.
+Do not add patient_id, report_id, doctor_id, case_id, created_at, or database fields.
+Use exactly this JSON shape:
+{REPORT_SCHEMA_TEXT}
+"""
+
+
 def extract_json_text(text: str):
     text = (text or "").strip()
     if text.startswith("```"):
@@ -160,6 +181,25 @@ def generate_raw_image_report_json(client: Groq, scan_type: str, prediction: dic
 def generate_report_json(scan_type: str, prediction: dict, image_path: Path):
     client = get_groq_client()
     raw_report = generate_raw_image_report_json(client, scan_type, prediction, image_path)
+    try:
+        return refine_report_json(client, raw_report)
+    except ValueError:
+        return raw_report
+
+
+def generate_text_report_json(scan_type: str, prediction: dict):
+    client = get_groq_client()
+    completion = client.chat.completions.create(
+        model=VISION_MODEL,
+        messages=[
+            {"role": "system", "content": VISION_SYSTEM_PROMPT},
+            {"role": "user", "content": build_text_only_prompt(scan_type, prediction)},
+        ],
+        temperature=0.2,
+        response_format={"type": "json_object"},
+    )
+
+    raw_report = parse_report_response(completion.choices[0].message.content, "Stage 1 text report")
     try:
         return refine_report_json(client, raw_report)
     except ValueError:
