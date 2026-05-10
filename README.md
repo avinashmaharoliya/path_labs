@@ -1,61 +1,93 @@
-# Medical Scan FastAPI Backend
+# 🧬 PathLabs — Medical Scan Analysis API
 
-This backend exposes four upload endpoints:
+A FastAPI backend that accepts medical imaging scans (Ultrasound, X-Ray, MRI, CT) and returns structured AI-generated diagnostic reports using deep learning models and Groq LLM inference.
 
-- `POST /ultrasound`
-- `POST /xray`
-- `POST /mri2d-3d`
-- `POST /ct2d-3d`
+---
 
-MRI and CT endpoints auto-route files:
+## 🚀 Features
 
-- image files (`.png`, `.jpg`, `.jpeg`, `.bmp`, `.webp`) go to the 2D model
-- NIfTI files (`.nii`, `.nii.gz`) go to the 3D placeholder function
+- **Multi-modality support** — Ultrasound, X-Ray, 2D MRI, and 2D CT scan analysis
+- **Smart routing** — MRI and CT endpoints auto-detect file type and route to the appropriate model (2D image vs. 3D NIfTI)
+- **Structured reports** — Every prediction returns a standardized JSON report with classifier results, combined assessment, recommended next steps, and a patient-friendly explanation
+- **Groq LLM integration** — Uses Groq API for fast language model inference
+- **Interactive API docs** — Auto-generated Swagger UI via FastAPI
 
-The 3D MRI/CT model files are placeholders until those models are trained.
+---
 
-## Setup
+## 📁 Project Structure
 
-Install dependencies:
-
-```powershell
-pip install -r fastapi_backend/requirements.txt
+```
+path_labs/
+├── app/                        # FastAPI application
+│   └── main.py                 # Entry point, route definitions
+├── uploads/                    # Temporary upload storage
+├── requirements.txt            # Python dependencies
+└── README.md
 ```
 
-Create `.env` in the project root:
+> Model weights are expected under `models/` (not committed to the repo):
+> - `models/ultrasound/best_model.pth`
+> - `models/xray/best_xray_model.pth`
+> - `models/mri_2d/mri_model.pth`
+> - `models/ct_2d/ct_model.pth`
+
+---
+
+## 🛠️ Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/avinashmaharoliya/path_labs.git
+cd path_labs
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-Run:
+### 4. Run the server
 
-```powershell
-uvicorn app.main:app --reload --app-dir fastapi_backend
+```bash
+uvicorn app.main:app --reload
 ```
 
-Open docs:
+---
 
-```text
-http://127.0.0.1:8000/docs
-```
+## 🌐 API Endpoints
 
-Health check:
+| Method | Endpoint       | Description                        |
+|--------|----------------|------------------------------------|
+| `GET`  | `/health`      | Health check                       |
+| `POST` | `/ultrasound`  | Analyze an ultrasound image        |
+| `POST` | `/xray`        | Analyze a chest X-ray image        |
+| `POST` | `/mri2d-3d`    | Analyze an MRI scan (2D or 3D)     |
+| `POST` | `/ct2d-3d`     | Analyze a CT scan (2D or 3D)       |
 
-```text
-http://127.0.0.1:8000/health
-```
+### File Format Routing (MRI & CT)
 
-## Current Loaded Models
+| File Extension               | Routed To       |
+|------------------------------|-----------------|
+| `.png`, `.jpg`, `.jpeg`, `.bmp`, `.webp` | 2D model |
+| `.nii`, `.nii.gz`            | 3D placeholder  |
 
-- Ultrasound: `fastapi_backend/models/ultrasound/best_model.pth`
-- X-ray: `fastapi_backend/models/xray/best_xray_model.pth`
-- MRI 2D: `fastapi_backend/models/mri_2d/mri_model.pth`
-- CT 2D: `fastapi_backend/models/ct_2d/ct_model.pth`
+> ⚠️ 3D NIfTI model support is currently a placeholder pending model training.
 
-## Response Shape
+---
 
-Each prediction endpoint returns:
+## 📄 Response Schema
+
+All prediction endpoints return a consistent JSON structure:
 
 ```json
 {
@@ -70,4 +102,39 @@ Each prediction endpoint returns:
 }
 ```
 
-The response follows the structure in the root `format.json` directly. No wrapper fields are added.
+---
+
+## 📦 Dependencies
+
+| Package            | Purpose                              |
+|--------------------|--------------------------------------|
+| `fastapi`          | Web framework                        |
+| `uvicorn`          | ASGI server                          |
+| `python-multipart` | File upload handling                 |
+| `python-dotenv`    | Environment variable loading         |
+| `groq`             | Groq LLM API client                  |
+| `torch`            | Deep learning inference              |
+| `torchvision`      | Image transforms and pretrained models |
+| `timm`             | Model architectures (e.g. EfficientNet, ViT) |
+| `pillow`           | Image loading and preprocessing      |
+
+---
+
+## 📖 API Docs
+
+Once the server is running, open:
+
+- **Swagger UI:** `http://127.0.0.1:8000/docs`
+- **ReDoc:** `http://127.0.0.1:8000/redoc`
+
+---
+
+## ⚠️ Disclaimer
+
+PathLabs is a research and educational project. It is **not intended for clinical use**. Always consult a licensed medical professional for diagnosis and treatment decisions.
+
+---
+
+## 👤 Author
+
+**Avinash Maharoliya** — [GitHub](https://github.com/avinashmaharoliya)
